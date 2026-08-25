@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustLife Akten-Generator</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#0f172a;
+    color:#e5e7eb;
+  }
+  .wrap{max-width:1050px;margin:24px auto;padding:18px}
+  .header{
+    background:#111827;
+    border:1px solid #334155;
+    border-radius:16px;
+    padding:20px;
+    margin-bottom:18px;
+  }
+  h1{margin:0 0 6px;font-size:30px}
+  h2{margin-top:0}
+  .muted{color:#94a3b8}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .tab{
+    background:#1e293b;color:#fff;border:1px solid #475569;
+    padding:11px 16px;border-radius:10px;cursor:pointer;font-weight:700
+  }
+  .tab.active{background:#2563eb;border-color:#2563eb}
+  .panel{display:none}
+  .panel.active{display:block}
+  .card{
+    background:#111827;border:1px solid #334155;border-radius:16px;
+    padding:20px;margin-bottom:18px
+  }
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .full{grid-column:1/-1}
+  label{display:block;font-weight:700;margin-bottom:6px}
+  input,select,textarea{
+    width:100%;padding:12px;border-radius:10px;border:1px solid #475569;
+    background:#0b1220;color:#fff;font-size:15px
+  }
+  textarea{min-height:120px;resize:vertical}
+  #punkte,#trafficPunkte{min-height:220px}
+  #output,#trafficOutput{min-height:360px;line-height:1.55}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  button{
+    border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer
+  }
+  .primary{background:#2563eb;color:white}
+  .secondary{background:#334155;color:white}
+  .success{background:#166534;color:white}
+  .danger{background:#7f1d1d;color:white}
+  .hint{
+    background:#0b1220;border:1px solid #334155;border-radius:12px;
+    padding:12px;margin-bottom:14px;color:#cbd5e1
+  }
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .stat{background:#0b1220;border:1px solid #334155;border-radius:12px;padding:15px}
+  .num{font-size:28px;font-weight:800}
+  .record{
+    border:1px solid #334155;border-radius:12px;padding:14px;margin-bottom:10px;background:#0b1220
+  }
+  @media(max-width:750px){
+    .grid,.stats{grid-template-columns:1fr}
+    .full{grid-column:auto}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>TrustLife Akten-Generator</h1>
+    <div class="muted">Aus Stichpunkten automatisch einen fertigen RP-Aktentext erstellen.</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('akte',this)">📁 Akte</button>
+    <button class="tab" onclick="showTab('traffic',this)">🚦 Traffic</button>
+    <button class="tab" onclick="showTab('stats',this)">📊 Statistik</button>
+    <button class="tab" onclick="showTab('saved',this)">🗂 Gespeichert</button>
+  </div>
+
+  <section id="akte" class="panel active">
+    <div class="card">
+      <div class="hint">
+        Du musst nur die wichtigsten Stichpunkte eintragen. Der Generator macht daraus automatisch einen sauberen Aktenbericht. Strafen werden bewusst nicht eingetragen, da sie direkt im Tablet hinzugefügt werden.
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Behörde</label>
+          <select id="agency">
+            <option>LSPD</option>
+            <option>Army</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Aktenart</label>
+          <select id="aktenart">
+            <option>Festnahmebericht</option>
+            <option>Strafakte</option>
+            <option>Einsatzbericht</option>
+            <option>Ermittlungsakte</option>
+            <option>Personenakte</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Name der Person</label>
+          <input id="person" placeholder="z. B. Max Mustermann">
+        </div>
+
+        <div>
+          <label>Geburtsdatum</label>
+          <input id="geburtsdatum" type="date">
+        </div>
+
+        <div>
+          <label>Datum</label>
+          <input id="datum" type="date">
+        </div>
+
+        <div>
+          <label>Uhrzeit</label>
+          <input id="uhrzeit" type="time">
+        </div>
+
+        <div>
+          <label>Bearbeitender Beamter</label>
+          <input id="officer" placeholder="z. B. Jack Corlen">
+        </div>
+
+        <div>
+          <label>Dienstnummer</label>
+          <input id="dienstnummer" placeholder="z. B. 01">
+        </div>
+
+        <div class="full">
+          <label>Ort</label>
+          <input id="ort" placeholder="z. B. Legion Square">
+        </div>
+
+        <div class="full">
+          <label>Stichpunkte zum Vorfall</label>
+          <textarea id="punkte" placeholder="Beispiel:
+- Fahrzeug fiel durch überhöhte Geschwindigkeit auf
+- Anhaltesignale ignoriert
+- kurze Verfolgung
+- Fahrer anschließend angehalten
+- Person kooperativ
+- Fahrzeug durchsucht
+- Waffe gefunden und sichergestellt"></textarea>
+        </div>
+
+        <div>
+          <label>Geldstrafe</label>
+          <input id="geldstrafe" type="number" min="0" placeholder="z. B. 2500">
+        </div>
+
+        <div>
+          <label>Haftstrafe</label>
+          <input id="haftstrafe" placeholder="z. B. 15 Hafteinheiten">
+        </div>
+
+        <div class="full">
+          <label>Optionale Zusatzinfos</label>
+          <textarea id="zusatz" placeholder="Nur falls nötig, z. B. Zeugen, besondere Umstände, Beweismittel ..."></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="generateCase()">Akten-Text erstellen</button>
+        <button class="secondary" onclick="copyText('output')">Text kopieren</button>
+        <button class="success" onclick="saveCase()">Speichern</button>
+        <button class="danger" onclick="resetCase()">Zurücksetzen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Fertiger Aktentext</h2>
+      <textarea id="output" readonly></textarea>
+    </div>
+  </section>
+
+  <section id="traffic" class="panel">
+    <div class="card">
+      <div class="hint">
+Auch hier reichen Stichpunkte. Geld- und Haftstrafe können direkt mit in den fertigen Text übernommen werden.
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Fahrer</label>
+          <input id="t_name" placeholder="Vor- und Nachname">
+        </div>
+
+        <div>
+          <label>Geburtsdatum</label>
+          <input id="t_birth" type="date">
+        </div>
+
+        <div>
+          <label>Kennzeichen</label>
+          <input id="t_plate" placeholder="z. B. LS1234">
+        </div>
+
+        <div>
+          <label>Fahrzeug</label>
+          <input id="t_vehicle" placeholder="z. B. Sultan">
+        </div>
+
+        <div>
+          <label>Datum</label>
+          <input id="t_date" type="date">
+        </div>
+
+        <div>
+          <label>Uhrzeit</label>
+          <input id="t_time" type="time">
+        </div>
+
+        <div>
+          <label>Beamter</label>
+          <input id="t_officer">
+        </div>
+
+        <div>
+          <label>Dienstnummer</label>
+          <input id="t_dn">
+        </div>
+
+        <div class="full">
+          <label>Ort</label>
+          <input id="t_location">
+        </div>
+
+        <div>
+          <label>Geldstrafe / Bußgeld</label>
+          <input id="t_fine" type="number" min="0" placeholder="z. B. 1500">
+        </div>
+
+        <div>
+          <label>Haftstrafe</label>
+          <input id="t_prison" placeholder="z. B. 5 Hafteinheiten">
+        </div>
+
+        <div class="full">
+          <label>Stichpunkte zum Verkehrsverstoß</label>
+          <textarea id="trafficPunkte" placeholder="Beispiel:
+- 95 km/h bei erlaubten 50 km/h
+- Stoppschild überfahren
+- Fahrzeug anschließend kontrolliert
+- Fahrer einsichtig
+- keine weiteren Auffälligkeiten"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="generateTraffic()">Traffic-Text erstellen</button>
+        <button class="secondary" onclick="copyText('trafficOutput')">Text kopieren</button>
+        <button class="success" onclick="saveTraffic()">Speichern</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Fertiger Traffic-Text</h2>
+      <textarea id="trafficOutput" readonly></textarea>
+    </div>
+  </section>
+
+  <section id="stats" class="panel">
+    <div class="card">
+      <h2>Statistik</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="num" id="s_total">0</div>
+          <div class="muted">Gespeicherte Vorgänge</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="s_cases">0</div>
+          <div class="muted">Akten</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="s_traffic">0</div>
+          <div class="muted">Traffic-Vorgänge</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="saved" class="panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+        <h2>Gespeicherte Vorgänge</h2>
+        <button class="danger" onclick="clearAll()">Alle löschen</button>
+      </div>
+      <div id="records"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
+
+function showTab(id, btn){
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  $(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='stats') renderStats();
+  if(id==='saved') renderRecords();
+}
+
+function setDefaults(){
+  const d = new Date();
+  const date = d.toISOString().slice(0,10);
+  const time = d.toTimeString().slice(0,5);
+  $('datum').value = date;
+  $('uhrzeit').value = time;
+  $('t_date').value = date;
+  $('t_time').value = time;
+}
+setDefaults();
+
+function cleanPoints(raw){
+  return raw
+    .split('\n')
+    .map(x=>x.replace(/^\s*[-•*]\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function naturalJoin(points){
+  if(!points.length) return '';
+  return points.map((p,i)=>{
+    let x = p.charAt(0).toLowerCase() + p.slice(1);
+    x = x.replace(/[.!?]+$/,'');
+    if(i===0) return x;
+    return x;
+  });
+}
+
+function money(value){
+  const n = Number(value || 0);
+  return n.toLocaleString('de-DE') + ' $';
+}
+
+function buildNarrative(points, person, location){
+  const p = naturalJoin(points);
+  if(!p.length) return 'Zum Vorfall wurden keine weiteren Stichpunkte hinterlegt.';
+
+  let text = `Im Rahmen des Einsatzes am angegebenen Ort wurde folgender Sachverhalt festgestellt: `;
+  text += p.map((x,i)=>{
+    if(i===0) return x.charAt(0).toUpperCase()+x.slice(1);
+    const starters = ['Im weiteren Verlauf','Anschließend','Daraufhin','Während der weiteren Maßnahmen','Im Anschluss','Nachfolgend'];
+    return starters[(i-1)%starters.length] + ' ' + x;
+  }).join('. ') + '.';
+
+  if(person){
+    text += ` Die Maßnahmen bezogen sich auf ${person}.`;
+  }
+  return text;
+}
+
+function generateCase(){
+  const points = cleanPoints(val('punkte'));
+  const person = val('person') || 'Unbekannte Person';
+  const agency = val('agency');
+  const art = val('aktenart');
+  const narrative = buildNarrative(points, person, val('ort'));
+
+  let text =
+`${agency.toUpperCase()}
+${art.toUpperCase()}
+
+BETROFFENE PERSON
+Name: ${person}
+Geburtsdatum: ${val('geburtsdatum') || 'Nicht angegeben'}
+
+DATUM / UHRZEIT
+${val('datum') || 'Nicht angegeben'} – ${val('uhrzeit') || 'Nicht angegeben'}
+
+ORT
+${val('ort') || 'Nicht angegeben'}
+
+SACHVERHALT
+${narrative}`;
+
+  text += `
+
+STRAFMAẞNAHMEN
+Geldstrafe: ${money(val('geldstrafe'))}
+Haftstrafe: ${val('haftstrafe') || 'Keine'}`;
+
+  if(val('zusatz')){
+    text += `
+
+WEITERE INFORMATIONEN
+${val('zusatz')}`;
+  }
+
+  text += `
+
+BEARBEITUNG
+${val('officer') || 'Nicht angegeben'} | Dienstnummer ${val('dienstnummer') || '-'}`;
+
+  $('output').value = text;
+  return text;
+}
+
+function generateTraffic(){
+  const points = cleanPoints(val('trafficPunkte'));
+  const person = val('t_name') || 'Unbekannte Person';
+  const narrative = buildNarrative(points, person, val('t_location'));
+
+  const text =
+`LSPD
+TRAFFIC / VERKEHRSBERICHT
+
+FAHRER
+Name: ${person}
+Geburtsdatum: ${val('t_birth') || 'Nicht angegeben'}
+
+FAHRZEUG
+Fahrzeug: ${val('t_vehicle') || 'Nicht angegeben'}
+Kennzeichen: ${val('t_plate') || 'Nicht angegeben'}
+
+DATUM / UHRZEIT
+${val('t_date') || 'Nicht angegeben'} – ${val('t_time') || 'Nicht angegeben'}
+
+ORT
+${val('t_location') || 'Nicht angegeben'}
+
+SACHVERHALT
+${narrative}
+
+STRAFMAẞNAHMEN
+Geldstrafe / Bußgeld: ${money(val('t_fine'))}
+Haftstrafe: ${val('t_prison') || 'Keine'}
+
+BEARBEITUNG
+${val('t_officer') || 'Nicht angegeben'} | Dienstnummer ${val('t_dn') || '-'}`;
+
+  $('trafficOutput').value = text;
+  return text;
+}
+
+function copyText(id){
+  if(!$(id).value){
+    if(id==='output') generateCase();
+    else generateTraffic();
+  }
+  navigator.clipboard.writeText($(id).value);
+}
+
+function loadData(){
+  try{return JSON.parse(localStorage.getItem('trustlife_records_v3')||'[]')}
+  catch(e){return []}
+}
+function storeData(data){
+  localStorage.setItem('trustlife_records_v3',JSON.stringify(data));
+}
+
+function saveCase(){
+  const data=loadData();
+  data.unshift({
+    id:Date.now(),
+    type:'Akte',
+    subtype:val('aktenart'),
+    person:val('person'),
+    officer:val('officer'),
+    date:val('datum'),
+    text:generateCase()
+  });
+  storeData(data);
+  alert('Akte gespeichert.');
+}
+
+function saveTraffic(){
+  const data=loadData();
+  data.unshift({
+    id:Date.now(),
+    type:'Traffic',
+    subtype:'Verkehrsbericht',
+    person:val('t_name'),
+    officer:val('t_officer'),
+    date:val('t_date'),
+    text:generateTraffic()
+  });
+  storeData(data);
+  alert('Traffic-Vorgang gespeichert.');
+}
+
+function renderStats(){
+  const data=loadData();
+  $('s_total').textContent=data.length;
+  $('s_cases').textContent=data.filter(x=>x.type==='Akte').length;
+  $('s_traffic').textContent=data.filter(x=>x.type==='Traffic').length;
+}
+
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+function renderRecords(){
+  const data=loadData();
+  const c=$('records');
+  if(!data.length){
+    c.innerHTML='<p class="muted">Noch keine Vorgänge gespeichert.</p>';
+    return;
+  }
+  c.innerHTML=data.map(r=>`
+    <div class="record">
+      <strong>${escapeHtml(r.type)} – ${escapeHtml(r.subtype)}</strong>
+      <div class="muted">${escapeHtml(r.person||'Unbekannt')} · ${escapeHtml(r.date||'')} · ${escapeHtml(r.officer||'')}</div>
+      <div class="actions">
+        <button class="secondary" onclick="copyRecord(${r.id})">Kopieren</button>
+        <button class="danger" onclick="deleteRecord(${r.id})">Löschen</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyRecord(id){
+  const r=loadData().find(x=>x.id===id);
+  if(r) navigator.clipboard.writeText(r.text);
+}
+
+function deleteRecord(id){
+  storeData(loadData().filter(x=>x.id!==id));
+  renderRecords();
+  renderStats();
+}
+
+function clearAll(){
+  if(confirm('Wirklich alle gespeicherten Vorgänge löschen?')){
+    localStorage.removeItem('trustlife_records_v3');
+    renderRecords();
+    renderStats();
+  }
+}
+
+function resetCase(){
+  document.querySelectorAll('#akte input,#akte textarea').forEach(x=>x.value='');
+  $('agency').selectedIndex=0;
+  $('aktenart').selectedIndex=0;
+  $('output').value='';
+  setDefaults();
+}
+</script>
+</body>
+</html>
